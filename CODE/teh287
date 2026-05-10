@@ -644,3 +644,16 @@ cbar.set_label('Full Layer Shear (knots)')
 plt.title('GFS 10 m to 300 mb: Full Layer Shear')
 plt.savefig('FullLayershear_teh287.png')
 plt.show()
+
+
+import sounderpy as spy
+
+data = spy.get_obs_data('ama','2025','04','26','00')
+
+# Create sounding
+spy.build_sounding(
+    data,
+    dark_mode=False,
+    color_blind=True,
+    save=True,
+    filename='ama_sounding_20250426_00z')

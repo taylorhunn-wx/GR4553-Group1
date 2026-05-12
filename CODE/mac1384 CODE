@@ -1,1 +1,1005 @@
+#%% SPC US OUTLOOK MAP
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.feature import NaturalEarthFeature
+from shapely.geometry import box
+import matplotlib.patches as mpatches
+
+risk_order = ["TSTM", "MRGL", "SLGT", "ENH", "MDT", "HIGH"]
+
+proj = ccrs.LambertConformal(
+    central_longitude=-96.,
+    central_latitude=39.,
+    standard_parallels=(33., 45.)
+)
+
+fig = plt.figure(figsize=(19.2, 10.8))
+ax = plt.axes(projection=proj)
+ax.set_extent([-125., -70., 22., 50.])
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+ax.add_feature(cf.LAND, color='white')
+ax.add_feature(cf.OCEAN, color='lightblue')
+ax.add_feature(cf.COASTLINE, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.BORDERS, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.LAKES, color='lightblue', linewidth=1.0,edgecolor='black', zorder=4)
+legend_handles = [
+    mpatches.Patch(facecolor='#c1e9c1', edgecolor="black", label="TSTM"),
+    mpatches.Patch(facecolor='#66a366', edgecolor="black", label="MRGL"),
+    mpatches.Patch(facecolor='#ffe066', edgecolor="black", label="SLGT"),
+    mpatches.Patch(facecolor='#ffa366',  edgecolor="black", label="ENH"),
+    mpatches.Patch(facecolor='#e06666',  edgecolor="black", label="MDT"),
+    mpatches.Patch(facecolor='#ee99ee', edgecolor="black", label="HIGH")
+]
+
+ax.legend(
+    handles=legend_handles,
+    title="SPC Categorical Outlook",
+    loc="lower left",
+    frameon=True,
+    fontsize=12,
+    title_fontsize=18,
+)
+
+SPC_COLORS = {
+    "TSTM": "#c1e9c1",
+    "MRGL": "#66a366",
+    "SLGT": "#ffe066",
+    "ENH":  "#ffa366",
+    "MDT":  "#e06666",
+    "HIGH": "#ee99ee"
+}
+
+SPC_FILE = "day1otlk_20250425_1630_cat.lyr.geojson"
+
+# Load GeoJSON (EPSG:4326)
+spc_raw = gpd.read_file(SPC_FILE)
+
+# Clip box in EPSG:4326
+map_extent = gpd.GeoDataFrame(
+    geometry=[box(-125, 20, -70, 60)],
+    crs="EPSG:4326"
+)
+
+# Clip BEFORE projecting
+spc_raw = gpd.clip(spc_raw, map_extent)
+
+# Handle MultiPolygons
+spc_raw = spc_raw.explode(index_parts=False)
+
+# Draw polygons
+for risk in risk_order:
+    subset = spc_raw[spc_raw["LABEL"] == risk]
+    if not subset.empty:
+        subset.plot(
+            ax=ax,
+            facecolor=SPC_COLORS[risk],
+            edgecolor="none",
+            linewidth=1.2,
+            alpha=1,
+            zorder=3.9,
+            transform=ccrs.PlateCarree()
+        )
+
+ax.gridlines(draw_labels=True, color='gray', alpha=0.4, linestyle='--')
+ax.set_title("SPC Outlook – 1630Z April 25th, 2025", fontsize=18)
+
+plt.savefig("SPCOutlookGraphic.png")
+plt.show()
+
+#%% SPC US TORNADO OUTLOOK MAP
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.feature import NaturalEarthFeature
+from shapely.geometry import box
+import matplotlib.patches as mpatches
+
+risk_order = ["2", "5", "10", "15", "30", "45", "60", "SIGN"] #Tornado % Designations
+
+#Base Map Setup
+proj = ccrs.LambertConformal(
+    central_longitude=-96.,
+    central_latitude=39.,
+    standard_parallels=(33., 45.)
+)
+
+fig = plt.figure(figsize=(19.2, 10.8))
+ax = plt.axes(projection=proj)
+ax.set_extent([-125., -70., 22., 50.])
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+ax.add_feature(cf.LAND, color='white')
+ax.add_feature(cf.OCEAN, color='lightblue')
+ax.add_feature(cf.COASTLINE, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.BORDERS, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.LAKES, color='lightblue', linewidth=1.0, edgecolor='black', zorder=4)
+
+#Legend
+legend_handles = [
+    mpatches.Patch(facecolor='#308332', edgecolor="black", label="2%"),
+    mpatches.Patch(facecolor='#8d543e', edgecolor="black", label="5%"),
+    mpatches.Patch(facecolor='#fd9f3f', edgecolor="black", label="10%"),
+    mpatches.Patch(facecolor='#ff1d1d', edgecolor="black", label="15%"),
+    mpatches.Patch(facecolor='#fd3afd', edgecolor="black", label="30%"),
+    mpatches.Patch(facecolor='#9d44f0', edgecolor="black", label="45%"),
+    mpatches.Patch(facecolor='#104e8b', edgecolor="black", label="60%"),
+    mpatches.Patch(facecolor='white', edgecolor="black", hatch="///", label="SIGN")
+]
+
+ax.legend(
+    handles=legend_handles,
+    title="SPC Tornado Probabilities",
+    loc="lower left",
+    frameon=True,
+    fontsize=12,
+    title_fontsize=18,
+)
+
+TOR_COLORS = {
+    "2":  "#308332",
+    "5":  "#8d543e",
+    "10": "#fd9f3f",
+    "15": "#ff1d1d",
+    "30": "#fd3afd",
+    "45": "#9d44f0",
+    "60": "#104e8b",
+    "SIGN": "#ffffff"   # hatched
+}
+
+# LOAD SPC GEOJSON FILE
+SPC_FILE = "day1otlk_20250425_1630_torn.lyr.geojson"
+
+spc_raw = gpd.read_file(SPC_FILE)
+
+map_extent = gpd.GeoDataFrame(
+    geometry=[box(-125, 20, -70, 60)],
+    crs="EPSG:4326"
+)
+
+spc_raw = gpd.clip(spc_raw, map_extent)
+spc_raw = spc_raw.explode(index_parts=False)
+
+for risk in risk_order:
+
+    if risk != "SIGN":
+        subset = spc_raw[spc_raw["DN"].astype(str) == risk]
+    else:
+        subset = spc_raw[spc_raw["LABEL2"].str.contains("Significant", case=False, na=False)] \
+                 if "LABEL2" in spc_raw.columns else gpd.GeoDataFrame()
+
+    if subset.empty:
+        continue
+
+    # SIG PROBABILITY
+    if risk == "SIGN":
+        subset.plot(
+            ax=ax,
+            facecolor="none",
+            edgecolor="black",
+            linewidth=1.2,
+            hatch="///",
+            alpha=1,
+            zorder=4,
+            transform=ccrs.PlateCarree()
+        )
+
+    else:
+        subset.plot(
+            ax=ax,
+            facecolor=TOR_COLORS[risk],
+            edgecolor="none",
+            linewidth=1.2,
+            alpha=1,
+            zorder=3.9,
+            transform=ccrs.PlateCarree()
+        )
+
+#Title & Gridlines
+ax.gridlines(draw_labels=True, color='gray', alpha=0.4, linestyle='--')
+ax.set_title("SPC Tornado Outlook – 1630Z April 25th, 2025", fontsize=18)
+
+plt.savefig("SPCTorOutlook.png")
+plt.show()
+
+#%% SPC US WIND OUTLOOK MAP
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.feature import NaturalEarthFeature
+from shapely.geometry import box
+import matplotlib.patches as mpatches
+
+
+risk_order = ["5", "15", "30", "45", "60", "SIGN"]
+
+proj = ccrs.LambertConformal(
+    central_longitude=-96.,
+    central_latitude=39.,
+    standard_parallels=(33., 45.)
+)
+
+fig = plt.figure(figsize=(19.2, 10.8))
+ax = plt.axes(projection=proj)
+ax.set_extent([-125., -70., 22., 50.])
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+ax.add_feature(cf.LAND, color='white')
+ax.add_feature(cf.OCEAN, color='lightblue')
+ax.add_feature(cf.COASTLINE, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.BORDERS, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.LAKES, color='lightblue', linewidth=1.0, edgecolor='black', zorder=4)
+
+legend_handles = [
+    mpatches.Patch(facecolor='#8d543e', edgecolor="black", label="5%"),
+    mpatches.Patch(facecolor='#fd9f3f', edgecolor="black", label="15%"),
+    mpatches.Patch(facecolor='#ff1d1d', edgecolor="black", label="30%"),
+    mpatches.Patch(facecolor='#fd3afd', edgecolor="black", label="45%"),
+    mpatches.Patch(facecolor='#9d44f0', edgecolor="black", label="60%"),
+    mpatches.Patch(facecolor='white', edgecolor="black", hatch="///", label="SIGN")
+]
+
+ax.legend(
+    handles=legend_handles,
+    title="SPC Damaging Wind Probabilities",
+    loc="lower left",
+    frameon=True,
+    fontsize=12,
+    title_fontsize=18,
+)
+
+TOR_COLORS = {
+    "5":  "#8d543e",
+    "15": "#fd9f3f",
+    "30": "#ff1d1d",
+    "45": "#fd3afd",
+    "60": "#9d44f0",
+    "SIGN": "#ffffff"   # hatched
+}
+
+SPC_FILE = "day1otlk_20250425_1630_wind.lyr.geojson"
+
+spc_raw = gpd.read_file(SPC_FILE)
+
+map_extent = gpd.GeoDataFrame(
+    geometry=[box(-125, 20, -70, 60)],
+    crs="EPSG:4326"
+)
+
+spc_raw = gpd.clip(spc_raw, map_extent)
+
+spc_raw = spc_raw.explode(index_parts=False)
+
+for risk in risk_order:
+
+    if risk != "SIGN":
+        subset = spc_raw[spc_raw["DN"].astype(str) == risk]
+    else:
+        subset = spc_raw[spc_raw["LABEL2"].str.contains("Significant", case=False, na=False)] \
+                 if "LABEL2" in spc_raw.columns else gpd.GeoDataFrame()
+
+    if subset.empty:
+        continue
+
+    if risk == "SIGN":
+        subset.plot(
+            ax=ax,
+            facecolor="none",
+            edgecolor="black",
+            linewidth=1.2,
+            hatch="///",
+            alpha=1,
+            zorder=4,
+            transform=ccrs.PlateCarree()
+        )
+
+    else:
+        subset.plot(
+            ax=ax,
+            facecolor=TOR_COLORS[risk],
+            edgecolor="none",
+            linewidth=1.2,
+            alpha=1,
+            zorder=3.9,
+            transform=ccrs.PlateCarree()
+        )
+
+ax.gridlines(draw_labels=True, color='gray', alpha=0.4, linestyle='--')
+ax.set_title("SPC Damaging Wind Outlook – 1630Z April 25th, 2025", fontsize=18)
+
+plt.savefig("SPCWindOutlook.png")
+plt.show()
+
+#%% SPC US HAIL OUTLOOK MAP
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.feature import NaturalEarthFeature
+from shapely.geometry import box
+import matplotlib.patches as mpatches
+
+risk_order = ["5", "15", "30", "45", "60", "SIGN"]
+
+proj = ccrs.LambertConformal(
+    central_longitude=-96.,
+    central_latitude=39.,
+    standard_parallels=(33., 45.)
+)
+
+fig = plt.figure(figsize=(19.2, 10.8))
+ax = plt.axes(projection=proj)
+ax.set_extent([-125., -70., 22., 50.])
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+ax.add_feature(cf.LAND, color='white')
+ax.add_feature(cf.OCEAN, color='lightblue')
+ax.add_feature(cf.COASTLINE, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.BORDERS, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.LAKES, color='lightblue', linewidth=1.0, edgecolor='black', zorder=4)
+
+legend_handles = [
+    mpatches.Patch(facecolor='#8d543e', edgecolor="black", label="5%"),
+    mpatches.Patch(facecolor='#fd9f3f', edgecolor="black", label="15%"),
+    mpatches.Patch(facecolor='#ff1d1d', edgecolor="black", label="30%"),
+    mpatches.Patch(facecolor='#fd3afd', edgecolor="black", label="45%"),
+    mpatches.Patch(facecolor='#9d44f0', edgecolor="black", label="60%"),
+    mpatches.Patch(facecolor='white', edgecolor="black", hatch="///", label="SIGN")
+]
+
+ax.legend(
+    handles=legend_handles,
+    title="SPC Large Hail Probabilities",
+    loc="lower left",
+    frameon=True,
+    fontsize=12,
+    title_fontsize=18,
+)
+
+TOR_COLORS = {
+    "5":  "#8d543e",
+    "15": "#fd9f3f",
+    "30": "#ff1d1d",
+    "45": "#fd3afd",
+    "60": "#9d44f0",
+    "SIGN": "#ffffff"  
+}
+
+
+SPC_FILE = "day1otlk_20250425_1630_hail.lyr.geojson"
+
+spc_raw = gpd.read_file(SPC_FILE)
+
+map_extent = gpd.GeoDataFrame(
+    geometry=[box(-125, 20, -70, 60)],
+    crs="EPSG:4326"
+)
+
+spc_raw = gpd.clip(spc_raw, map_extent)
+
+spc_raw = spc_raw.explode(index_parts=False)
+
+for risk in risk_order:
+
+    if risk != "SIGN":
+        subset = spc_raw[spc_raw["DN"].astype(str) == risk]
+    else:
+        subset = spc_raw[spc_raw["LABEL2"].str.contains("Significant", case=False, na=False)] \
+                 if "LABEL2" in spc_raw.columns else gpd.GeoDataFrame()
+
+    if subset.empty:
+        continue
+
+    if risk == "SIGN":
+        subset.plot(
+            ax=ax,
+            facecolor="none",
+            edgecolor="black",
+            linewidth=1.2,
+            hatch="///",
+            alpha=1,
+            zorder=4,
+            transform=ccrs.PlateCarree()
+        )
+
+    else:
+        subset.plot(
+            ax=ax,
+            facecolor=TOR_COLORS[risk],
+            edgecolor="none",
+            linewidth=1.2,
+            alpha=1,
+            zorder=3.9,
+            transform=ccrs.PlateCarree()
+        )
+        
+ax.gridlines(draw_labels=True, color='gray', alpha=0.4, linestyle='--')
+ax.set_title("SPC Large Hail Outlook – 1630Z April 25th, 2025", fontsize=18)
+
+plt.savefig("SPCHailOutlook.png")
+plt.show()
+
+#%% SPC ZOOMED OUTLOOK MAP & STORM REPORTS
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.feature import NaturalEarthFeature
+from shapely.geometry import box
+import matplotlib.patches as mpatches
+
+risk_order = ["TSTM", "MRGL", "SLGT", "ENH", "MDT", "HIGH"]
+
+proj = ccrs.LambertConformal(
+    central_longitude=-96.,
+    central_latitude=39.,
+    standard_parallels=(33., 45.)
+)
+
+fig = plt.figure(figsize=(19.2, 10.8))
+ax = plt.axes(projection=proj)
+ax.set_extent([-110., -94., 30., 37.])
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+ax.add_feature(cf.LAND, color='white')
+ax.add_feature(cf.OCEAN, color='lightblue')
+ax.add_feature(cf.COASTLINE, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.BORDERS, edgecolor='black', linewidth=1.0, zorder=4)
+ax.add_feature(cf.LAKES, color='lightblue', linewidth=1.0,edgecolor='black', zorder=4)
+legend_handles = [
+    mpatches.Patch(facecolor='#c1e9c1', edgecolor="black", label="TSTM"),
+    mpatches.Patch(facecolor='#66a366', edgecolor="black", label="MRGL"),
+    mpatches.Patch(facecolor='#ffe066', edgecolor="black", label="SLGT"),
+    mpatches.Patch(facecolor='#ffa366',  edgecolor="black", label="ENH"),
+    mpatches.Patch(facecolor='#e06666',  edgecolor="black", label="MDT"),
+    mpatches.Patch(facecolor='#ee99ee', edgecolor="black", label="HIGH")
+]
+
+report_handles = [
+    mpatches.Patch(facecolor='red', edgecolor="black", label="Tornado"),
+    mpatches.Patch(facecolor='blue', edgecolor="black", label="Wind (50Kt+)"),
+    mpatches.Patch(facecolor='blue', edgecolor="white", label="Sig. Wind (65Kt+)"),
+    mpatches.Patch(facecolor='green',  edgecolor="black", label="Hail (1+ in.)"),
+    mpatches.Patch(facecolor='green',  edgecolor="lime", label="Sig. Hail (2+ in.)")
+]
+
+spc_legend = ax.legend(
+    handles=legend_handles,
+    title="SPC Categorical Outlook",
+    loc="lower left",
+    frameon=True,
+    fontsize=12,
+    title_fontsize=18,
+)
+
+report_legend = ax.legend(
+    handles=report_handles,
+    title="Storm Reports",
+    loc="lower right",
+    frameon=True,
+    fontsize=12,
+    title_fontsize=18,
+)
+
+ax.add_artist(report_legend)
+ax.add_artist(spc_legend)
+
+SPC_COLORS = {
+    "TSTM": "#c1e9c1",
+    "MRGL": "#66a366",
+    "SLGT": "#ffe066",
+    "ENH":  "#ffa366",
+    "MDT":  "#e06666",
+    "HIGH": "#ee99ee"
+}
+
+SPC_FILE = "day1otlk_20250425_1630_cat.lyr.geojson"
+
+spc_raw = gpd.read_file(SPC_FILE)
+
+map_extent = gpd.GeoDataFrame(
+    geometry=[box(-125, 20, -70, 60)],
+    crs="EPSG:4326"
+)
+
+spc_raw = gpd.clip(spc_raw, map_extent)
+
+spc_raw = spc_raw.explode(index_parts=False)
+
+for risk in risk_order:
+    subset = spc_raw[spc_raw["LABEL"] == risk]
+    if not subset.empty:
+        subset.plot(
+            ax=ax,
+            facecolor=SPC_COLORS[risk],
+            edgecolor="none",
+            linewidth=1.2,
+            alpha=1,
+            zorder=3.9,
+            transform=ccrs.PlateCarree()
+        )
+        
+reports = pd.read_csv("250425_rpts_torn.csv")
+reports.columns = reports.columns.str.lower()
+
+if "lat" in reports.columns and "lon" in reports.columns:
+    ax.scatter(
+        reports["lon"],
+        reports["lat"],
+        color="red",
+        marker="o",
+        s=60,
+        edgecolor="black",
+        linewidth=0.7,
+        transform=ccrs.PlateCarree(),
+        zorder=20
+    )
+else:
+    print("CSV missing lat/lon columns:", reports.columns)
+    
+hail_reports = pd.read_csv("250425_rpts_hail.csv")
+hail_reports.columns = hail_reports.columns.str.lower()
+
+if "lat" in hail_reports.columns and "lon" in hail_reports.columns and "size" in hail_reports.columns:
+
+    # Normal hail (< 2.00in)
+    normal = hail_reports[hail_reports["size"] < 200]
+
+    ax.scatter(
+        normal["lon"],
+        normal["lat"],
+        color="green",
+        marker="o",
+        s=60,
+        edgecolor="black",
+        linewidth=0.7,
+        transform=ccrs.PlateCarree(),
+        zorder=10
+    )
+
+    # Giant hail (>= 2.00in)
+    giant = hail_reports[hail_reports["size"] >= 200]
+
+    ax.scatter(
+        giant["lon"],
+        giant["lat"],
+        color="green",
+        marker="D",   # diamond for giant hail
+        s=80,
+        edgecolor="lime",
+        linewidth=0.9,
+        transform=ccrs.PlateCarree(),
+        zorder=11
+    )
+
+else:
+    print("CSV missing required columns:", hail_reports.columns)
+    
+
+wind_reports = pd.read_csv("250425_rpts_wind.csv")
+wind_reports.columns = wind_reports.columns.str.lower()
+
+has_speed = "speed" in wind_reports.columns
+
+if has_speed:
+    unk_mask = wind_reports["speed"].astype(str).str.upper() == "UNK"
+
+    wind_reports["speed"] = pd.to_numeric(wind_reports["speed"], errors="coerce")
+
+if "lat" in wind_reports.columns and "lon" in wind_reports.columns and has_speed:
+
+    unk_wind = wind_reports[unk_mask]
+
+    ax.scatter(
+        unk_wind["lon"],
+        unk_wind["lat"],
+        color="blue",
+        marker="o",
+        s=55,
+        edgecolor="black",
+        linewidth=0.7,
+        transform=ccrs.PlateCarree(),
+        zorder=9
+    )
+
+    # Normal severe wind (< 60 Knots)
+    normal_wind = wind_reports[(wind_reports["speed"] < 74.8007) & (~unk_mask)]
+
+    ax.scatter(
+        normal_wind["lon"],
+        normal_wind["lat"],
+        color="blue",
+        marker="o",
+        s=60,
+        edgecolor="black",
+        linewidth=0.7,
+        transform=ccrs.PlateCarree(),
+        zorder=10
+    )
+    
+    extreme_wind = wind_reports[(wind_reports["speed"] >= 74.8007)]
+
+    ax.scatter(
+        extreme_wind["lon"],
+        extreme_wind["lat"],
+        color="blue",
+        marker="s",
+        s=80,
+        edgecolor="white",
+        linewidth=0.9,
+        transform=ccrs.PlateCarree(),
+        zorder=11
+    )
+
+else:
+    print("CSV missing required columns:", wind_reports.columns)
+
+ax.gridlines(draw_labels=True, color='gray', alpha=0.4, linestyle='--')
+ax.set_title("SPC Outlook & Storm Reports – 1630Z April 25th, 2025", fontsize=18)
+
+plt.savefig("SPCOutlookGraphicREPORTS_ZOOMED.png")
+plt.show()
+
+#%% Reflectivity Zoomed
+import cartopy.crs as ccrs
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
+
+from metpy.calc import azimuth_range_to_lat_lon
+from metpy.io import Level2File
+from metpy.units import units
+from metpy.plots import USCOUNTIES
+from cartopy.feature import NaturalEarthFeature
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+#Open file
+fname = 'KLBB20250425_210052_V06'
+f = Level2File(fname)
+
+sweep = 0
+
+az = np.array([ray[0].az_angle for ray in f.sweeps[sweep]])
+
+diff = np.diff(az)
+crossed = diff < -180
+diff[crossed] += 360.
+avg_spacing = diff.mean()
+
+az = (az[:-1] + az[1:]) / 2
+az[crossed] += 180.
+az = np.concatenate(([az[0] - avg_spacing], az, [az[-1] + avg_spacing]))
+az = units.Quantity(az, 'degrees')
+
+###########################################
+# Gate ranges + data
+
+ref_hdr = f.sweeps[sweep][0][4][b'REF'][0]
+ref_range = (np.arange(ref_hdr.num_gates + 1) - 0.5) * ref_hdr.gate_width + ref_hdr.first_gate
+ref_range = units.Quantity(ref_range, 'kilometers')
+ref = np.array([ray[4][b'REF'][1] for ray in f.sweeps[sweep]])
+
+###########################################
+# Radar's TRUE location from file
+
+radar_lon = f.sweeps[0][0][1].lon
+radar_lat = f.sweeps[0][0][1].lat
+
+#Map Center
+map_lon = -102.6
+map_lat = 33.95
+
+###########################################
+# Convert radar polar → geographic coordinates
+
+xlocs, ylocs = azimuth_range_to_lat_lon(az, ref_range, radar_lon, radar_lat)
+
+###########################################
+# Plot
+
+fig = plt.figure(figsize=(19.2,10.8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+# Add features
+ax.add_feature(USCOUNTIES, linewidth=0.4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0)
+
+# Plot radar data
+ax.pcolormesh(xlocs, ylocs, ref, cmap='Spectral_r', transform=ccrs.PlateCarree())
+
+ax.set_extent([
+    map_lon - 0.8, map_lon + 0.8,
+    map_lat - 0.4, map_lat + 0.4,
+], crs=ccrs.PlateCarree())
+
+ax.gridlines(draw_labels=True, linewidth=1, color='grey', alpha=0.5, linestyle='--')
+
+plt.title("KLBB – Reflectivity - 3:56PM April 25th, 2025")
+plt.savefig(f"{fname}_REFLECTIVITY.png")
+plt.show()
+
+#%% Velocity Zoomed
+import cartopy.crs as ccrs
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
+
+from metpy.calc import azimuth_range_to_lat_lon
+from metpy.io import Level2File
+from metpy.units import units
+from metpy.plots import USCOUNTIES
+from cartopy.feature import NaturalEarthFeature
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+###########################################
+# Open the file
+
+fname = 'KLBB20250425_210052_V06'
+f = Level2File(fname)
+
+###########################################
+# Find velocity sweep
+
+vel_sweep = None
+for i, sweep in enumerate(f.sweeps):
+    if b'VEL' in sweep[0][4]:
+        vel_sweep = i
+        break
+
+if vel_sweep is None:
+    raise ValueError("No VEL field found in this Level II file")
+
+sweep = vel_sweep
+
+###########################################
+# Extract azimuths
+
+az = np.array([ray[0].az_angle for ray in f.sweeps[sweep]])
+
+diff = np.diff(az)
+crossed = diff < -180
+diff[crossed] += 360.
+avg_spacing = diff.mean()
+
+az = (az[:-1] + az[1:]) / 2
+az[crossed] += 180.
+
+az = np.concatenate(([az[0] - avg_spacing], az, [az[-1] + avg_spacing]))
+az = units.Quantity(az, 'degrees')
+
+###########################################
+# Extract Base Velocity
+
+vel_hdr = f.sweeps[sweep][0][4][b'VEL'][0]
+vel_range = (np.arange(vel_hdr.num_gates + 1) - 0.5) * vel_hdr.gate_width + vel_hdr.first_gate
+vel_range = units.Quantity(vel_range, 'kilometers')
+vel = np.array([ray[4][b'VEL'][1] for ray in f.sweeps[sweep]])
+
+###########################################
+# Radar's TRUE location (must stay this way)
+
+radar_lon = f.sweeps[0][0][1].lon
+radar_lat = f.sweeps[0][0][1].lat
+
+###########################################
+# YOUR CUSTOM MAP CENTER (Option B)
+
+map_lon = -102.6
+map_lat = 33.95
+
+###########################################
+# Convert radar polar → geographic coordinates
+
+xlocs, ylocs = azimuth_range_to_lat_lon(az, vel_range, radar_lon, radar_lat)
+
+###########################################
+# Plotting
+
+fig = plt.figure(figsize=(19.2,10.8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+# Add features
+ax.add_feature(USCOUNTIES, linewidth=0.4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0)
+
+# Velocity colormap
+ax.pcolormesh(
+    xlocs, ylocs, vel,
+    cmap='seismic',
+    vmin=-60, vmax=60,
+    transform=ccrs.PlateCarree()
+)
+
+###########################################
+ax.set_extent([
+    map_lon - 0.8, map_lon + 0.8,
+    map_lat - 0.4, map_lat + 0.4,
+], crs=ccrs.PlateCarree())
+
+ax.set_aspect('equal', 'datalim')
+
+ax.gridlines(
+    crs=ccrs.PlateCarree(), draw_labels=True,
+    linewidth=1, color='grey', alpha=0.5, linestyle='--'
+)
+
+plt.title("KLBB - Base Velocity – 3:56PM April 25th, 2025")
+
+plt.savefig(f"{fname}_VELOCITY.png")
+plt.show()
+
+#%% CC Zoomed
+import cartopy.crs as ccrs
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
+
+from metpy.calc import azimuth_range_to_lat_lon
+from metpy.io import Level2File
+from metpy.units import units
+from metpy.plots import USCOUNTIES
+from cartopy.feature import NaturalEarthFeature
+
+STATES = NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none'
+)
+
+###########################################
+# Open the file
+
+fname = 'KLBB20250425_210052_V06'
+f = Level2File(fname)
+
+###########################################
+# Find CC sweep
+
+cc_sweep = None
+for i, sweep in enumerate(f.sweeps):
+    if b'RHO' in sweep[0][4]:   # CC is stored as RHO
+        cc_sweep = i
+        break
+
+if cc_sweep is None:
+    raise ValueError("No CC (RHO) field found in this Level II file")
+
+sweep = cc_sweep
+
+###########################################
+# Extract azimuths
+
+az = np.array([ray[0].az_angle for ray in f.sweeps[sweep]])
+
+diff = np.diff(az)
+crossed = diff < -180
+diff[crossed] += 360.
+avg_spacing = diff.mean()
+
+az = (az[:-1] + az[1:]) / 2
+az[crossed] += 180.
+
+az = np.concatenate(([az[0] - avg_spacing], az, [az[-1] + avg_spacing]))
+az = units.Quantity(az, 'degrees')
+
+###########################################
+# Extract CC (RHO)
+
+cc_hdr = f.sweeps[sweep][0][4][b'RHO'][0]
+cc_range = (np.arange(cc_hdr.num_gates + 1) - 0.5) * cc_hdr.gate_width + cc_hdr.first_gate
+cc_range = units.Quantity(cc_range, 'kilometers')
+cc = np.array([ray[4][b'RHO'][1] for ray in f.sweeps[sweep]])
+
+###########################################
+# Radar's TRUE location
+
+radar_lon = f.sweeps[0][0][1].lon
+radar_lat = f.sweeps[0][0][1].lat
+
+###########################################
+# YOUR CUSTOM MAP CENTER
+
+map_lon = -102.6
+map_lat = 33.95
+
+###########################################
+# Convert radar polar → geographic coordinates
+
+xlocs, ylocs = azimuth_range_to_lat_lon(az, cc_range, radar_lon, radar_lat)
+
+###########################################
+# Plotting
+
+fig = plt.figure(figsize=(19.2,10.8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+# Add features
+ax.add_feature(USCOUNTIES, linewidth=0.4)
+ax.add_feature(STATES, edgecolor='black', linewidth=1.0)
+
+# Mask bad values
+cc = np.ma.masked_where(cc < 0, cc)
+
+# Plot CC
+ax.pcolormesh(
+    xlocs, ylocs, cc,
+    cmap='turbo',      # CC looks great in turbo
+    vmin=0.0, vmax=1.0,
+    transform=ccrs.PlateCarree()
+)
+
+###########################################
+ax.set_extent([
+    map_lon - 0.8, map_lon + 0.8,
+    map_lat - 0.4, map_lat + 0.4,
+], crs=ccrs.PlateCarree())
+
+ax.set_aspect('equal', 'datalim')
+
+ax.gridlines(
+    crs=ccrs.PlateCarree(), draw_labels=True,
+    linewidth=1, color='grey', alpha=0.5, linestyle='--'
+)
+
+plt.title("KLBB Correlation Coefficient – 3:56 PM April 25th, 2025")
+
+plt.savefig(f"{fname}_CC.png")
+plt.show()
 

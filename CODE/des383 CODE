@@ -1,1 +1,55 @@
+"""
+Created on Mon May 11 21:25:44 2026
 
+@author: Dawson
+"""
+
+#%% 500mb heights map
+
+from matplotlib import colormaps
+import pygrib
+import pandas as pd
+import matplotlib
+import cartopy.crs as ccrs
+import cartopy.feature as cf 
+import matplotlib.pyplot as plt
+import cartopy 
+import numpy as np
+
+
+grbs = pygrib.open("gfs.0p25.2025042600.f000.grib2")
+fig=plt.figure (figsize=(8,8))
+
+
+proj=ccrs.LambertConformal(central_longitude=-96.,central_latitude=30.,standard_parallels=(30.,30.))
+ax=plt.axes(projection=proj)
+ax.set_extent([-125.,-70.,20.,50.])
+
+ax.add_feature(cf.LAND, color='bisque')
+ax.add_feature(cf.OCEAN, color='lightsteelblue')
+ax.add_feature(cf.COASTLINE, edgecolor='grey')
+ax.add_feature(cf.STATES, edgecolor='grey')
+ax.add_feature(cf.BORDERS, edgecolor='grey')
+ax.add_feature(cf.LAKES, color='lightsteelblue')
+
+gl= ax.gridlines(draw_labels=True, linewidth=1, linestyle='--', color='black')
+gl.left_labels=False
+gl.top_labels=False
+gl.x_inline = False
+gl.y_inline = False 
+
+height500 = grbs.select(name='Geopotential height', level=500)[0]
+lats, lons = height500.latlons()
+z500 = height500.values
+z500_dm = z500/10
+
+level = np.arange(480, 606, 6) 
+mapZ500 = plt.contour(lons, lats, z500_dm,
+                 levels=level,
+                 colors='black',
+                 linewidths=1,
+                 transform=ccrs.PlateCarree())
+
+plt.title('500 mb Heights (dm) -- April 26, 2025 at 00Z')
+plt.savefig('500mbHeights.png')
+plt.show()
